@@ -13,12 +13,26 @@ Qdrant does NOT build HNSW indexes immediately. Small segments use brute-force u
 ## Uploads/Ingestion Too Slow
 
 Use when: upload or upsert API calls are slow.
+Identify bottleneck: client-side (network, batching) vs server-side (CPU, disk I/O)
 
-- Use batch upserts (64-256 points per request) [Collections API](https://qdrant.tech/documentation/concepts/collections/)
+For client-side, optimize batching and parallelism:
+
+- Use batch upserts (64-256 points per request) [Points API](https://qdrant.tech/documentation/concepts/points/#upload-points)
 - Use 2-4 parallel upload streams
-- Disable HNSW during bulk load (set `indexing_threshold_kb` very high, restore after) [Collection params](https://qdrant.tech/documentation/concepts/collections/#update-collection-parameters)
+
+For server-side, optimize Qdrant configuration and indexing strategy:
+
+- Create more shards (3-12), each shard has an independent update worker [Sharding](https://qdrant.tech/documentation/guides/distributed_deployment/#sharding)
 - Create payload indexes before HNSW builds (needed for filterable vector index) [Payload index](https://qdrant.tech/documentation/concepts/indexing/#payload-index)
+
+Suitable for initial bulk load of large datasets:
+
+- Disable HNSW during bulk load (set `indexing_threshold_kb` very high, restore after) [Collection params](https://qdrant.tech/documentation/concepts/collections/#update-collection-parameters)
 - Setting `m=0` to disable HNSW is legacy, use high `indexing_threshold_kb` instead
+
+Careful, fast unindexed upload might temporarily use more RAM and degrade search performance until optimizer catches up.
+
+See https://qdrant.tech/documentation/tutorials-develop/bulk-upload/
 
 
 ## Optimizer Stuck or Taking Too Long
@@ -27,7 +41,6 @@ Use when: optimizer running for hours, not finishing.
 
 - Check actual progress via optimizations endpoint (v1.17+) [Optimization monitoring](https://qdrant.tech/documentation/concepts/optimizer/#optimization-monitoring)
 - Large merges and HNSW rebuilds legitimately take hours on big datasets
-- Merge optimizer processes three smallest segments at a time [Merge optimizer](https://qdrant.tech/documentation/concepts/optimizer/#merge-optimizer)
 - Check CPU and disk I/O (HNSW is CPU-bound, merging is I/O-bound, HDD is not viable)
 - If `optimizer_status` shows an error, check logs for disk full or corrupted segments
 
@@ -38,25 +51,31 @@ Use when: HNSW index build dominates total indexing time.
 
 - Reduce `m` (default 16, good for most cases, 32+ rarely needed) [HNSW params](https://qdrant.tech/documentation/concepts/indexing/#vector-index)
 - Reduce `ef_construct` (100-200 sufficient) [HNSW config](https://qdrant.tech/documentation/concepts/collections/#indexing-vectors-in-hnsw)
-- Increase `max_indexing_threads` (helps but not a silver bullet) [Configuration](https://qdrant.tech/documentation/guides/configuration/)
-- Build HNSW in-memory first, move to disk after if needed
+- Keep `max_indexing_threads` proportional to CPU cores [Configuration](https://qdrant.tech/documentation/guides/configuration/)
+- Use GPU for indexing [GPU indexing](https://qdrant.tech/documentation/guides/running-with-gpu/)
 
+## HNSW index for multi-tenant collections
 
-## Data Uploaded But Search Quality Is Poor
+If you have a multi-tenant use-case, where all data is split by some payload field (e.g. `tenant_id`), you can avoid building global HNSW index and instead rely on `payload_m` value to only build HNSW index for subsets of data.
+Skipping global HNSW index can significantly reduce indexing time.
 
-Use when: data uploaded, search returns bad results.
+See [Multi-tenant collections](https://qdrant.tech/documentation/guides/multitenancy/) for details.
 
-- Check `indexed_vectors_count` in collection info (if 0, HNSW not built yet)
-- Wait for `optimizer_status: ok` [Optimizer monitoring](https://qdrant.tech/documentation/concepts/optimizer/#optimization-monitoring)
-- Check if segments are too small to trigger HNSW (merge optimizer needs to combine them first)
-- Use `indexed_only=true` in search params to skip unindexed segments
-- Check distance metric is correct (Cosine vs Dot) [Collection creation](https://qdrant.tech/documentation/concepts/collections/#create-a-collection)
+## Additional payload indexes is too slow
+
+Qdrant builds extra HNSW links for all payload indexes to ensure that quality of filtered vector search does not degrade.
+Some payload indexes (e.g. `text` type with long texts) can have very high number or 
+unique values per point, which can lead to long HNSW build time.
+
+You can disable building extra HNSW links for specific payload index and instead rely on slightly slower query-time strategies like ACORN.
+
+Read more about disabling extra HNSW links in [documentation](https://qdrant.tech/documentation/concepts/indexing/#disable-the-creation-of-extra-edges-for-payload-fields)
+
+Read more about ACORN in [documentation](https://qdrant.tech/documentation/concepts/search/#acorn-search-algorithm)
 
 
 ## What NOT to Do
 
-- Kill Qdrant while optimizer is running (corrupts segments)
-- Create payload indexes AFTER HNSW is built (breaks filterable vector index)
-- Use `m=0` to disable indexing (legacy, use high `indexing_threshold_kb`)
-- Upload one point at a time (per-request overhead dominates)
-- Assume search is broken when optimizer is still running
+- Do not create payload indexes AFTER HNSW is built (breaks filterable vector index)
+- Do not use `m=0` for bulk uploads into existing collection, it might drop existing HNSW and cause long reindexing 
+- Do not upload one point at a time (per-request overhead dominates)
