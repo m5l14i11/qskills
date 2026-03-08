@@ -3,56 +3,65 @@ name: qdrant-memory-usage-optimization
 description: "Diagnoses and reduces Qdrant memory usage. Use when someone reports 'memory too high', 'RAM keeps growing', 'node crashed', 'out of memory', 'memory leak', or asks 'why is memory usage so high?', 'how to reduce RAM?'. Also use when memory doesn't match calculations, quantization didn't help, or nodes crash during recovery."
 ---
 
-# What to Do When Qdrant Memory Usage Is Too High
+# Understanding memory usage
 
-First distinguish data memory from OS page cache. `htop` shows both combined, which is misleading. 80% data = danger. 80% total including cache = often fine.
+Qdrant operates with 2 types of RAM memory: 
 
-- Check telemetry to separate data vs cache [Monitoring docs](https://qdrant.tech/documentation/guides/monitoring/)
+- Resident memory (aka RSSAnon) - memory used for internal data structures like ID tracker, and some components forced to stay in RAM, quantized vectors if `always_ram=true`, payload indexes, e.t.c.
 
+- OS page cache - memory used for caching disk reads, which can be released when needed. Original vectors are normally stored in page cahce, so the service won't crash if RAM is full, but performance may degrade.
 
-## Memory Keeps Growing
+It is normal of OS page cache to occupy whole available RAM, but if resident memory is above 80% of total, it's a sign of a problem.
 
-Use when: RAM grows over time, drops on restart.
+## Memory usage monitoring
 
-- Check telemetry: if data is stable but total climbs, it's cache, not a problem
-- If data memory grows with zero traffic, upgrade to latest (known issue before v1.13)
-- Check collection count: each adds 12-14 MB overhead [Collections docs](https://qdrant.tech/documentation/concepts/collections/)
+- Qdrant exposes memory usage with `/metrics` endpoint see more in [Monitoring docs](https://qdrant.tech/documentation/guides/monitoring/).
 
-
-## Memory Unexpectedly High
-
-Use when: memory is 2-3x higher than calculations predict.
-
-- Check what's actually in RAM [Storage config](https://qdrant.tech/documentation/concepts/storage/#vector-storage)
-- Check HNSW graph location (in RAM unless `on_disk=true`) [HNSW on-disk](https://qdrant.tech/documentation/guides/optimize/#2-high-precision-with-low-memory-usage)
-- Check payload indexes (in memory by default) [On-disk indexes](https://qdrant.tech/documentation/concepts/indexing/#on-disk-payload-index)
-- Check replication factor (RF=2 = 2x data memory) [Replication](https://qdrant.tech/documentation/guides/distributed_deployment/#replication)
-- Check segment count and memmap threshold [Configuring memmap](https://qdrant.tech/documentation/concepts/storage/#configuring-memmap-storage)
+<!-- ToDo: Talk about memory usage of each components once API is available -->
 
 
-## Quantization Didn't Reduce Memory
+## How much memory is needed for Qdrant?
 
-Use when: enabled quantization but RAM didn't decrease.
+Optimal memory usage depends on the use case.
 
-- Check optimizer status first (changes may not have taken effect yet) [Optimizer monitoring](https://qdrant.tech/documentation/concepts/optimizer/#optimization-monitoring)
-- Check telemetry, not htop (quantization reduces data memory, not cache)
-- Verify config: quantized vectors need `always_ram=true`, originals need `on_disk=true` [Scalar quantization setup](https://qdrant.tech/documentation/guides/quantization/#setting-up-scalar-quantization)
-- Check for full-text indexes consuming remaining RAM [Full-text index](https://qdrant.tech/documentation/concepts/indexing/#full-text-index)
+- For regular search scenarios general guidelines are provided in [Capacity planning docs](https://qdrant.tech/documentation/guides/capacity-planning/).
 
+For detailed breakdown of memory usage on a large scale exmaple see [Large scale memory usage example](https://qdrant.tech/documentation/tutorials-operations/large-scale-search/#memory-usage).
 
-## Node Crashes with OOM
+Payload indexes and HNSW graph also require memory, along with vectors themselves, so it's important to consider them in calculations.
 
-Use when: node crashes with "cannot allocate memory".
-
-- Consolidate collections using tenant fields [Multitenancy](https://qdrant.tech/documentation/guides/multiple-partitions/)
-- Check K8s memory limits (reserve 10-15% headroom)
-- Use snapshot-based replication for large shards [Shard transfer](https://qdrant.tech/documentation/guides/distributed_deployment/#shard-transfer-method)
-- Upgrade if on older version (v1.11+ improved memory management)
+Additionally, qdrant requires some extra memory for optimizations. During optimization, optimized segments are fully loaded into RAM, so it is importat to have some headroom for that.
+Large the `max_segment_size`, more headroom is needed.
 
 
-## What NOT to Do
+### When to put HNSW index on disk
 
-- Dismiss memory growth as "just cache" without checking telemetry
-- Set `always_ram=false` on quantization (performance collapse)
-- Ignore replication factor (RF=2 = 2x data memory)
-- Confuse float16 datatype with quantization (float16 = 2x disk, scalar int8 = 4x memory)
+Putting frequently used components (such as HNSW index) on disk might cause significant performance degradation.
+There are some scenarios, however, when it can be a good option:
+
+- Deployments with low latency disks - local NVMe or similar.
+- Multi-tenant deployments, where only a subset of tenants is frequently accessed, so that only a fraction of data & index is loaded in RAM at a time.
+- For deployments with [inline storage](https://qdrant.tech/documentation/guides/optimize/#inline-storage-in-hnsw-index) enabled.
+
+
+## How to minimize memory footprint
+
+The main challenge is to put on disk those parts of data, which are rarely accessed.
+Here are the main techniques to achieve that:
+
+- Use quantization to store only compressed vectors in ram [Quantization docs](https://qdrant.tech/documentation/guides/quantization/)
+
+- Use float16 or int8 datatypes to reduce memory usage of vectors by 2x or 4x respectively, with some tradeoff in precision. Read more about vector datatypes in [documentation](https://qdrant.tech/documentation/concepts/vectors/#datatypes)
+
+- Leverage Matryoshka Representation Learning (MRL) to store only small vectors in RAM, while keeping large vectors on disk. Examples of how to use MRL with qdrant cloud inferece: [MRL docs](https://qdrant.tech/documentation/concepts/inference/#reduce-vector-dimensionality-with-matryoshka-models)
+
+- For multi-tenant deployments with small tenants, vectors might be stored on-disk, as same tenant data is stored together [Multitenancy docs](https://qdrant.tech/documentation/guides/multitenancy/#calibrate-performance)
+
+- For deployments with fast local storage and relatively low requirements for search throughput, it may be possible to store all components of vector store on disk. Read more about the performance implications of on-disk storage in [the article](https://qdrant.tech/articles/memory-consumption/)
+
+- For low RAM environments, consider `async_scorer` config, which enables support of `io_uring` for parallel disk access, which can significantly improve performance of on-disk storage. Read more about `async_scorer` in [the article](https://qdrant.tech/articles/io_uring/) (only available on Linux with kernel 5.11+)
+
+- Consider storing Sparse Vectors and text payload on disk, as they are usually more disk-friently compared to dense vectors. 
+    - Configuring payload indexes to be stored on disk [docs](https://qdrant.tech/documentation/concepts/indexing/#on-disk-payload-index)
+    - Configuring sparse vectors to be stored on disk [docs](https://qdrant.tech/documentation/concepts/indexing/#sparse-vector-index)
+
