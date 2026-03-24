@@ -53,8 +53,6 @@ Use when: setting up a new cluster and want to avoid resharding later.
 - Choose LCM shard count: 48 shards works for 12, 16, or 24 nodes. 24 shards works for 6, 8, 12, or 24 nodes.
 - `shard_number` should be 1-2x current node count (allows 2x growth)
 
-When scaling vertically on Qdrant Cloud (e.g. 8 to 32 CPUs), the cluster enters an "Updating" state. Typically completes in minutes but can be delayed by cloud provider outages. Check provider health dashboards before opening a support ticket.
-
 
 ## What NOT to Do
 
