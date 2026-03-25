@@ -12,7 +12,7 @@ Vertical first: simpler operations, no network overhead, good up to ~100M vector
 
 ## Not Ready to Scale Yet
 
-Use when: planning to scale but haven't started. Get these right first.
+Use when: planning to scale but haven't started. Cover these prerequisites before proceeding.
 
 - Minimum 3 nodes with `replication_factor: 2` for zero-downtime scaling
 - Set up monitoring (Grafana/Prometheus) BEFORE scaling
@@ -33,7 +33,7 @@ Most people jump to horizontal too early. Exhaust vertical options first.
 
 ## Need to Change Shard Count
 
-Use when: existing shard count doesn't match node count, or need to rebalance.
+Use when: shard count isn't evenly divisible by node count, causing uneven distribution, or need to rebalance.
 
 Resharding is expensive and time-consuming. Hours to weeks depending on data size. Locks segments during transfer, queries may timeout under high concurrency.
 
