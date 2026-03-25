@@ -1,41 +1,24 @@
 ---
 name: qdrant-search-quality
-description: "Guidance on how to improve the search quality in Qdrant, including tips on tuning parameters, and applying information retrieval best practices. Use when you want to enhance the relevance and accuracy of search results in your Qdrant deployment."
+description: "Diagnoses and improves Qdrant search relevance. Use when someone reports 'search results are bad', 'wrong results', 'low precision', 'low recall', 'irrelevant matches', 'missing expected results', or asks 'how to improve search quality?', 'which embedding model?', 'should I use hybrid search?', 'should I use reranking?'. Also use when search quality degrades after quantization, model change, or data growth."
 allowed-tools:
   - Read
   - Grep
   - Glob
 ---
 
-
-
 # Qdrant Search Quality
 
-Search quality is a critical aspect of any vector search system, including Qdrant. Qdrant supports a variety of techniques to improve search quality.
-Choice of the right technique depends on the specific use case and requirements of your application.
- This document serves as a navigation hub for different techniques to improve search quality in Qdrant.
+First determine whether the problem is the embedding model, Qdrant configuration, or the query strategy. Most quality issues come from the model or data, not from Qdrant itself. If search quality is low, inspect how chunks are being passed to Qdrant before tuning any parameters. Splitting mid-sentence can drop quality 30-40%.
+
+- Start by testing with exact search to isolate the problem [Search API](https://qdrant.tech/documentation/concepts/search/#search-api)
 
 
-## Identifying Source of Search Quality Issues
+## Diagnosis and Tuning
 
-<!-- ToDo -->
+Isolate the source of quality issues, tune HNSW parameters, and choose the right embedding model. [Diagnosis and Tuning](diagnosis/SKILL.md)
 
-## Tuning Vector Index Parameters
 
-<!-- ToDo -->
+## Search Strategies
 
-## Choosing Right Embedding Model
-
-<!-- ToDo -->
-
-## Whether to use hybrid search
-
-<!-- ToDo -->
-
-## Whether to use reranking
-
-<!-- ToDo -->
-
-## Whether to use relevance feedback
-
-<!-- ToDo -->
+Hybrid search, reranking, relevance feedback, and exploration APIs for improving result quality. [Search Strategies](search-strategies/SKILL.md)
