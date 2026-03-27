@@ -9,17 +9,43 @@ allowed-tools:
 
 # Qdrant Scaling
 
-First determine what you're scaling for: data volume, query throughput (QPS), query latency, tenant count, or IOPS. Each pulls toward different strategies. Scaling for throughput and latency are opposite tuning directions.
+First determine what you're scaling for:
 
-- Understand the tradeoff [Latency vs throughput](https://qdrant.tech/documentation/guides/optimize/#balancing-latency-and-throughput)
-- High speed vs high precision vs low memory: [qdrant performance](https://qdrant.tech/documentation/operations/optimize/)
+- data volume
+- query throughput (QPS)
+- query latency
+- query volume
+
+After determining the scaling goal, we can choose scaling strategy based on tradeoffs and assumptions.
+Each pulls toward different strategies. Scaling for throughput and latency are opposite tuning directions.
 
 
-## Performance & Capacity Scaling
+## Scaling Data Volume
 
-Vertical scaling, horizontal scaling, throughput, latency, IOPS, and memory pressure. Start vertical, go horizontal only when necessary -- horizontal scaling is effectively a one-way street. [Performance Scaling](performance-scaling/SKILL.md)
+This becomes relevant when volume of the dataset exceeds the capacity of a single node.
+Read more about scaling for data volume in [Scaling Data Volume](scaling-data-volume/SKILL.md)
 
 
-## Tenant Scaling
+## Scaling for Query Throughput
 
-Multi-tenant workloads with payload partitioning, per-tenant indexes, and tiered multitenancy. [Tenant Scaling](tenant-scaling/SKILL.md)
+If your system needs to handle mor parallel queries than a single node can handle,
+ then you need to scale for query throughput.
+
+Read more about scaling for query throughput in [Scaling for Query Throughput](scaling-qps/SKILL.md)
+
+## Scaling for Query Latency
+
+Latancy of a single query is determined by the slowest component in the query execution path.
+It is in sometimes correlated with throughput, but not always. It might require different strategies for scaling.
+
+Read more about scaling for query latency in [Scaling for Query Latency](minimize-latency/SKILL.md)
+
+
+## Scaling for Query Volume
+
+By query volume we understand the amount of results that a single query returns. 
+If the query volume is too high, it can cause performance issues and increase latency.
+
+Tuning for query volume is opposite might require special strategies. 
+
+Read more about scaling for query volume in [Scaling for Query Volume](scaling-query-volume/SKILL.md)
