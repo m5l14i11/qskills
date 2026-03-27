@@ -1,6 +1,15 @@
+---
+name: qdrant-scaling-data-volume
+description: "Guides Qdrant data volume scaling decisions. Use when someone asks 'data doesn't fit on one node', 'too much data', 'need more storage', 'vertical or horizontal scaling', 'tenant scaling', 'time window rotation', or 'data growth exceeds capacity'."
+allowed-tools:
+  - Read
+  - Grep
+  - Glob
+---
+
 # Scaling Data Volume
 
-This document coverts scenarions of scaling for data volume,
+This document covers scenarios of scaling for data volume,
  where the total size of the dataset exceeds the capacity of a single node.
 
 ## Tenant Scaling

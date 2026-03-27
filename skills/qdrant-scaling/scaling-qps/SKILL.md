@@ -1,10 +1,6 @@
 ---
 name: qdrant-scaling-qps
 description: "Guides Qdrant query throughput (QPS) scaling. Use when someone asks 'how to increase QPS', 'need more throughput', 'queries per second too low', 'batch search', 'read replicas', or 'how to handle more concurrent queries'."
-allowed-tools:
-  - Read
-  - Grep
-  - Glob
 ---
 
 # Scaling for Query Throughput (QPS)
@@ -21,7 +17,7 @@ High throughput favors fewer, larger segments so each query touches less overhea
 - Enable quantization with `always_ram=true` to reduce disk IO [Quantization](https://qdrant.tech/documentation/guides/quantization/)
 - Use batch search API to amortize overhead [Batch search](https://qdrant.tech/documentation/concepts/search/#batch-search-api)
 
-## Minize impact of Update Workloads
+## Minimize impact of Update Workloads
 
 - Configure update throughput control (v1.17+) to prevent unoptimized searches degrading reads [Low latency search](https://qdrant.tech/documentation/guides/low-latency-search/)
 - Set `optimizer_cpu_budget` to limit indexing CPUs (e.g. `2` on an 8-CPU node reserves 6 for queries)
@@ -47,7 +43,7 @@ In this case:
 
 - Upgrade to provisioned IOPS or local NVMe first. See impact of disk performance to vector search in [Disk performance article](https://qdrant.tech/articles/memory-consumption/)
 - Use `io_uring` on Linux (kernel 5.11+) [io_uring article](https://qdrant.tech/articles/io_uring/)
-- In case of quantized vectors, prefer global rescroing over per-segment rescoring to reduce disk reads. Example in the [tutorial](https://qdrant.tech/documentation/tutorials-operations/large-scale-search/#search-query)
+- In case of quantized vectors, prefer global rescoring over per-segment rescoring to reduce disk reads. Example in the [tutorial](https://qdrant.tech/documentation/tutorials-operations/large-scale-search/#search-query)
 - Configure higher number of search threads to parallelize disk reads. Default is `cpu_count - 1`, which is optimal for RAM-based search but may be too low for disk-based search. See [configuration reference](https://qdrant.tech/documentation/operations/configuration/#configuration-options)
 - If still saturated, scale out horizontally (each node adds independent IOPS)
 

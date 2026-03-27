@@ -1,10 +1,6 @@
 ---
 name: qdrant-scaling-query-volume
 description: "Guides Qdrant query volume scaling. Use when someone asks 'query returns too many results', 'scroll performance', 'large limit values', 'paginating search results', 'fetching many vectors', or 'high cardinality results'."
-allowed-tools:
-  - Read
-  - Grep
-  - Glob
 ---
 
 # Scaling for Query Volume
@@ -17,10 +13,10 @@ Instead of asking every shard for the full limit, ask each shard for a smaller l
 
 ## When it activates
 
-• More than 1 shard
-• Auto-sharding is in use (all queried shards share the same shard key)
-• The request's limit + offset >= SHARD_QUERY_SUBSAMPLING_LIMIT (128)
-• The query is not exact
+- More than 1 shard
+- Auto-sharding is in use (all queried shards share the same shard key)
+- The request's limit + offset >= SHARD_QUERY_SUBSAMPLING_LIMIT (128)
+- The query is not exact
 
 ## Key tradeoff
 

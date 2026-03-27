@@ -5,6 +5,7 @@ allowed-tools:
   - Read
   - Grep
   - Glob
+  - Bash
 ---
 
 # Qdrant Clients SDK

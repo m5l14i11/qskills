@@ -20,9 +20,9 @@ Read about [Partition by payload](https://qdrant.tech/documentation/manage-data/
 
 ## Number of Tenants is around 100k and more
 
-At this scale, clsuter may consist or several peers.
+At this scale, cluster may consist of several peers.
 To localize tenant data and improve performance, use [custom sharding](https://qdrant.tech/documentation/operations/distributed_deployment/#user-defined-sharding) to assign tenants to specific shards based on tenant ID hash.
-This will lcoalize tenant request to only specific nodes instread of broadcasting to all nodes, improving performance and reducing load on each node.
+This will localize tenant request to only specific nodes instead of broadcasting to all nodes, improving performance and reducing load on each node.
 
 ## If tenants are unevenly sized
 

@@ -28,14 +28,14 @@ Read more about scaling for data volume in [Scaling Data Volume](scaling-data-vo
 
 ## Scaling for Query Throughput
 
-If your system needs to handle mor parallel queries than a single node can handle,
+If your system needs to handle more parallel queries than a single node can handle,
  then you need to scale for query throughput.
 
 Read more about scaling for query throughput in [Scaling for Query Throughput](scaling-qps/SKILL.md)
 
 ## Scaling for Query Latency
 
-Latancy of a single query is determined by the slowest component in the query execution path.
+Latency of a single query is determined by the slowest component in the query execution path.
 It is in sometimes correlated with throughput, but not always. It might require different strategies for scaling.
 
 Read more about scaling for query latency in [Scaling for Query Latency](minimize-latency/SKILL.md)

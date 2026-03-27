@@ -55,7 +55,7 @@ Recognize these signals that it's time to go horizontal:
 - Need fault tolerance (requires replication across nodes)
 - Need tenant isolation via dedicated shards
 - Single-node CPU is maxed and query latency is unacceptable
-- Next vertical scaling step the the largest available node size. You might need to be able to temporarily scale up to the larger node size to do batch operations or recovery. If you are already at the largest node size, you won't be able to do that.
+- Next vertical scaling step is the largest available node size. You might need to be able to temporarily scale up to the larger node size to do batch operations or recovery. If you are already at the largest node size, you won't be able to do that.
 
 When you hit these limits, see [Horizontal Scaling](../horizontal-scaling/SKILL.md) for guidance on sharding and node planning.
 
