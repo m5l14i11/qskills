@@ -25,6 +25,8 @@ High throughput favors fewer, larger segments so each query touches less overhea
 
 - Configure update throughput control (v1.17+) to prevent unoptimized searches degrading reads [Low latency search](https://qdrant.tech/documentation/guides/low-latency-search/)
 - Set `optimizer_cpu_budget` to limit indexing CPUs (e.g. `2` on an 8-CPU node reserves 6 for queries)
+- Configure delayed read fan-out (v1.17+) for tail latency [Delayed fan-outs](https://qdrant.tech/documentation/search/low-latency-search/#use-delayed-fan-outs)
+
 
 
 ## Horizontal Scaling for Throughput

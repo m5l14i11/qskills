@@ -11,8 +11,7 @@ allowed-tools:
 
 Latency of a single query is determined by the slowest component in the query execution path. It is sometimes correlated with throughput, but not always — throughput and latency are opposite tuning directions.
 
-Low latency favors more segments so each segment is smaller and searched faster in parallel across CPU cores.
-
+Low latency optimization is aimed at utilising maximum resource saturation for a single query, while throughput optimization is aimed at minimizing per-query resource usage to allow more parallel queries.
 
 ## Performance Tuning for Lower Latency
 
@@ -20,8 +19,6 @@ Low latency favors more segments so each segment is smaller and searched faster 
 - Keep quantized vectors and HNSW in RAM (`always_ram=true`)
 - Reduce `hnsw_ef` at query time (trade recall for speed) [Search params](https://qdrant.tech/documentation/guides/optimize/#fine-tuning-search-parameters)
 - Use local NVMe, avoid network-attached storage
-- Configure delayed read fan-out (v1.17+) for tail latency [Delayed fan-outs](https://qdrant.tech/documentation/guides/low-latency-search/#use-delayed-fan-outs)
-
 
 ## Memory Pressure and Latency
 
