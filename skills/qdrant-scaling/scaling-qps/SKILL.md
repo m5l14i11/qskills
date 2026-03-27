@@ -31,21 +31,22 @@ High throughput favors fewer, larger segments so each query touches less overhea
 
 If a single node is saturated on CPU after applying the tuning above, scale horizontally with read replicas.
 
-- Read replicas serve queries from replicated shards, distributing read load across nodes
+- Shard replicas serve queries from replicated shards, distributing read load across nodes
 - Each replica adds independent query capacity without re-sharding
-- Use `replication_factor: 2+` and route reads to replicas [Distributed deployment](https://qdrant.tech/documentation/guides/distributed_deployment/)
+- Use `replication_factor: 2+` and route reads to replicas [Distributed deployment](https://qdrant.tech/documentation/operations/distributed_deployment/#replication)
 
 See also [Horizontal Scaling](../scaling-data-volume/horizontal-scaling/SKILL.md) for general horizontal scaling guidance.
 
 
 ## Disk I/O Bottlenecks
 
-If throughput is limited by IOPS rather than CPU:
+If it is not possible to keep all vectors in RAM, disk I/O can become the bottleneck for throughput. 
+In this case:
 
-- Upgrade to provisioned IOPS or local NVMe first
+- Upgrade to provisioned IOPS or local NVMe first. See impact of disk performance to vector search in [Disk performance article](https://qdrant.tech/articles/memory-consumption/)
 - Use `io_uring` on Linux (kernel 5.11+) [io_uring article](https://qdrant.tech/articles/io_uring/)
-- Put sparse vectors and text payloads on disk
-- Set `indexing_threshold` high during bulk ingestion to defer indexing
+- In case of quantized vectors, prefer global rescroing over per-segment rescoring to reduce disk reads. Example in the [tutorial](https://qdrant.tech/documentation/tutorials-operations/large-scale-search/#search-query)
+- Configure higher number of search threads to parallelize disk reads. Default is `cpu_count - 1`, which is optimal for RAM-based search but may be too low for disk-based search. See [configuration reference](https://qdrant.tech/documentation/operations/configuration/#configuration-options)
 - If still saturated, scale out horizontally (each node adds independent IOPS)
 
 
