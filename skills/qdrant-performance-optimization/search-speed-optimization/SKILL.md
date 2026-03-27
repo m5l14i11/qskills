@@ -3,22 +3,33 @@ name: qdrant-search-speed-optimization
 description: "Diagnoses and fixes slow Qdrant search. Use when someone reports 'search is slow', 'high latency', 'queries take too long', 'low QPS', 'throughput too low', 'filtered search is slow', or 'search was fast but now it's slow'. Also use when search performance degrades after config changes or data growth."
 ---
 
-# What to Do When Qdrant Search Is Too Slow
+# Diagnose a problem
 
-First determine whether the problem is latency (single query speed) or throughput (queries per second). These pull in opposite directions. Getting this wrong means tuning the wrong knob.
+There the multiple possible reasons for search performance degradation. The most common ones are:
 
-- Understand the tradeoff [Latency vs throughput](https://qdrant.tech/documentation/guides/optimize/#balancing-latency-and-throughput)
+* Memory pressure: if the working set exceeds available RAM
+* Complex requests (e.g. high `hnsw_ef`, complex filters without payload index)
+* Competing background processes (e.g. optimizer still running after bulk upload)
+* Problem with the cluster (e.g. network issues, hardware degradation)
 
 
 ## Single Query Too Slow (Latency)
 
 Use when: individual queries take too long regardless of load.
 
-- Reduce `hnsw_ef` at query time (64-128 is usually sufficient) [Fine-tuning search](https://qdrant.tech/documentation/guides/optimize/#fine-tuning-search-parameters)
-- Enable scalar int8 quantization with `always_ram=true` [Scalar quantization](https://qdrant.tech/documentation/guides/quantization/#scalar-quantization)
-- Enable io_uring for disk-heavy workloads on Linux [io_uring](https://qdrant.tech/articles/io_uring/)
-- Check for unmerged segments after uploads [Merge optimizer](https://qdrant.tech/documentation/concepts/optimizer/#merge-optimizer)
+### Diagnostic steps:
+
+- Check if second run of the same request is significantly faster (indicates memory pressure)
+- Try the same query with `with_payload: false` and `with_vectors: false` to see if payload retrieval is the bottleneck
+- If request uses filters, try to remove them one by one to identify if a specific filter condition is the bottleneck
+
+### Common fixes:
+
+- Tune HNSW parameters: [Fine-tuning search](https://qdrant.tech/documentation/guides/optimize/#fine-tuning-search-parameters)
+- Enable in-memory quantization: [Scalar quantization](https://qdrant.tech/documentation/guides/quantization/#scalar-quantization)
+- Reduce Vector Dimensionality with Matryoshka Models: [Matryoshka Models](https://qdrant.tech/documentation/inference/#reduce-vector-dimensionality-with-matryoshka-models)
 - Use oversampling + rescore for high-dimensional vectors [Search with quantization](https://qdrant.tech/documentation/guides/quantization/#searching-with-quantization)
+- Enable io_uring for disk-heavy workloads on Linux [io_uring](https://qdrant.tech/articles/io_uring/)
 
 
 ## Can't Handle Enough QPS (Throughput)
@@ -36,19 +47,25 @@ Use when: system can't serve enough queries per second under load.
 Use when: filtered search is significantly slower than unfiltered. Most common SA complaint after memory.
 
 - Create payload index on the filtered field [Payload index](https://qdrant.tech/documentation/concepts/indexing/#payload-index)
-- Use `is_tenant=true` for high-cardinality tenant fields [Tenant index](https://qdrant.tech/documentation/concepts/indexing/#tenant-index)
-- Try ACORN algorithm for very restrictive filters (v1.13+) [Filterable HNSW](https://qdrant.tech/documentation/concepts/indexing/#filterable-hnsw-index)
+- Use `is_tenant=true` for primary filtering condition: [Tenant index](https://qdrant.tech/documentation/concepts/indexing/#tenant-index)
+- Try ACORN algorithm for complex filters: [ACORN](https://qdrant.tech/documentation/search/search/?q=acorn#acorn-search-algorithm)
+- Avoid using `nested` filtering conditions as a primary filter. It might force qdrant to read raw payload values instead of using index.
 - If payload index was added after HNSW build, trigger re-index to create filterable subgraph links
 
 
-## Search Was Fast, Now It's Slow
+## Optimize search performance with parallel updates
 
-Use when: search performance degraded without obvious config changes. Classic pattern after bulk uploads.
+### Diagnostic steps
 
-- Check optimizer status (most likely still running after upload) [Optimizer monitoring](https://qdrant.tech/documentation/concepts/optimizer/#optimization-monitoring)
-- Check segment count (unmerged segments from bulk upload) [Merge optimizer](https://qdrant.tech/documentation/concepts/optimizer/#merge-optimizer)
-- Check for cache eviction from competing processes
-- Do NOT make config changes while the optimizer is running
+- Try to run the same query with `indexed_only=true` parameter, if the query is significantly faster, it means that the optimizer is still running and has not yet indexed all segments.
+- If CPU or IO usage is high even with no queries, it also indicates that the optimizer is still running.
+
+### Recommended configuration changes
+
+- reduce `optimizer_cpu_budget` to reserve more CPU for queries
+- Use `prevent_unoptimized=true` to prevent creating segments with a large amount of unindexed data for searches. Instead, once a segment reaches the so called indexing_threshold, all additional points will be added in ‘deferred state’. 
+
+Learn more [here](https://qdrant.tech/documentation/search/low-latency-search/#query-indexed-data-only)
 
 
 ## What NOT to Do
