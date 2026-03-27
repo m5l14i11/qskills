@@ -28,8 +28,13 @@ and then horizontal scaling when we reach the limits of vertical scaling.
 
 ### Vertical Scaling
 
-ToDo
+When data doesn't fit in a single node, the first approach is to scale the node itself — more RAM, better disk, quantization, mmap.
+Exhaust vertical options before going horizontal, as horizontal scaling adds permanent operational complexity.
+
+Learn more [Vertical Scaling](vertical-scaling/SKILL.md)
 
 ### Horizontal Scaling
 
-ToDo
+When a single node can't hold the data even with quantization and mmap, distribute data across multiple nodes via sharding.
+
+Learn more [Horizontal Scaling](horizontal-scaling/SKILL.md)
