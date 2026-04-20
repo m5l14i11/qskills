@@ -2,6 +2,11 @@
   command = "bash build.sh"
   publish = "public"
 
+[[redirects]]
+  from = "/"
+  to = "/index.md"
+  status = 200
+
 [[headers]]
   for = "/*"
   [headers.values]
