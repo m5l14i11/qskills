@@ -52,7 +52,7 @@ Use when: HNSW index build dominates total indexing time.
 - Reduce `m` (default 16, good for most cases, 32+ rarely needed) [HNSW params](https://search.qdrant.tech/md/documentation/manage-data/indexing/?s=vector-index)
 - Reduce `ef_construct` (100-200 sufficient) [HNSW config](https://search.qdrant.tech/md/documentation/manage-data/collections/?s=indexing-vectors-in-hnsw)
 - Keep `max_indexing_threads` proportional to CPU cores [Configuration](https://search.qdrant.tech/md/documentation/ops-configuration/configuration/)
-- Use GPU for indexing [GPU indexing](https://search.qdrant.tech/md/documentation/ops-configuration/running-with-GPU/)
+- Use GPU for indexing [GPU indexing](https://search.qdrant.tech/md/documentation/ops-configuration/running-with-gpu/)
 
 ## HNSW index for multi-tenant collections
 
